@@ -44,7 +44,7 @@ test/
 ✅ 개발 목표 체크리스트
 
 - [x] 기본 NestJS 구조 세팅
-- [ ] GPT API 연동
+- [x] GPT API 연동
 - [ ] 단일 엔드포인트로 TMI 생성
 - [ ] 테스트 코드 작성 (Jest)
 - [ ] Swagger 문서화

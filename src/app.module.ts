@@ -1,10 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TmiModule } from './tmi/tmi.module';
+import { UserModule } from './module/user/user.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { WinstonLogger } from './config/logging/logger';
+import { TmiModule } from './module/tmi/tmi.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), TmiModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    TmiModule,
+    UserModule,
+  ],
   controllers: [],
   providers: [WinstonLogger],
 })

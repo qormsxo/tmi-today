@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  // Kakao OAuth2 기준 컬럼들 (동의 범위에 따라 null 가능)
+  kakaoId            String?  @unique @map("kakao_id")          // Kakao 사용자 식별자
+  email              String?  @unique                            // 로컬 회원가입 시 필수, Kakao는 nullable 허용
+  passwordHash       String?  @map("password_hash")             // 로컬 회원가입을 위한 비밀번호 해시
+  emailVerified      Boolean  @default(false) @map("email_verified")
+  nickname           String?  @map("nickname")
+  profileImageUrl    String?  @map("profile_image_url")
+  thumbnailImageUrl  String?  @map("thumbnail_image_url")
+  connectedAt        DateTime? @map("connected_at")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt      @map("updated_at")
+
+  @@map("users")
+}
+
+
