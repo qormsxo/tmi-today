@@ -6,13 +6,17 @@ import { AppModule } from './../src/app.module';
 describe('TmiController (e2e)', () => {
   let app: INestApplication;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   it('/tmi/today (GET) 요청은 성공해야 한다', () => {
