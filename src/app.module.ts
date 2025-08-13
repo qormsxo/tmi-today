@@ -4,6 +4,7 @@ import { UserModule } from './module/user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { WinstonLogger } from './config/logging/logger';
 import { TmiModule } from './module/tmi/tmi.module';
+import { AuthModule } from './module/auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TmiModule } from './module/tmi/tmi.module';
     }),
     PrismaModule,
     TmiModule,
+    AuthModule,
     UserModule,
   ],
   controllers: [],
