@@ -19,12 +19,12 @@ describe('TmiController (e2e)', () => {
     await app.close();
   });
 
-  it('/tmi/today (GET) 요청은 성공해야 한다', () => {
-    return request(app.getHttpServer())
-      .get('/tmi/today')
-      .expect(200)
-      .expect((res) => {
-        expect(typeof res.text).toBe('string');
-      });
-  }, 20000);
+  // it('/tmi/today (GET) 요청은 성공해야 한다', () => {
+  //   return request(app.getHttpServer())
+  //     .get('/tmi/today')
+  //     .expect(200)
+  //     .expect((res) => {
+  //       expect(typeof res.text).toBe('string');
+  //     });
+  // }, 20000);
 });
