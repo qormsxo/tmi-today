@@ -21,8 +21,18 @@ model User {
 
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt      @map("updated_at")
+  tmis               Tmi[]
 
   @@map("users")
 }
 
+model Tmi {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
 
+  @@map("tmi")
+}

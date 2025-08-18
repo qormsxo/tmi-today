@@ -1,7 +1,7 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { TmiService } from './tmi.service';
 import { JwtAuthGuard } from '../auth/auth.guard';
-
+import { User } from '@prisma/client';
 
 @Controller('tmi')
 export class TmiController {
@@ -9,7 +9,8 @@ export class TmiController {
 
   @Get('today')
   @UseGuards(JwtAuthGuard)
-  getTodaysTmi(): Promise<string> {
-    return this.tmiService.getTodaysTmi();
+  getTodaysTmi(@Req() req): Promise<string> {
+    const user = req.user as User;
+    return this.tmiService.getTodaysTmi(user);
   }
 }
