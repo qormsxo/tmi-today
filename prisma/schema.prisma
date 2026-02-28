@@ -27,13 +27,26 @@ model User {
   @@map("users")
 }
 
-model Tmi {
+model Category {
   id        String   @id @default(cuid())
-  content   String
+  code      String   @unique
+  name      String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id])
+  tmis      Tmi[]
+
+  @@map("categories")
+}
+
+model Tmi {
+  id         String    @id @default(cuid())
+  content    String    @db.Text
+  categoryId String?   @map("category_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  userId     String    @map("user_id")
+  user       User      @relation(fields: [userId], references: [id])
+  category   Category? @relation(fields: [categoryId], references: [id])
 
   @@map("tmi")
 }
