@@ -1,5 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import mysql from 'mysql2/promise';
+import { PrismaClient } from '../generated/prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -15,12 +17,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       databaseUrlFromEnv ??
       `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
 
+    // Prisma 7: MariaDB adapter 사용 (MySQL 호환)
+    // const pool = mysql.createPool(databaseUrl);
+    // const pool = mysql.createPool({
+    //   host: dbHost,
+    //   port: parseInt(dbPort),
+    //   user: dbUser,
+    //   password: dbPassword,
+    //   database: dbName,
+    // });
+    const adapter = new PrismaMariaDb(databaseUrl);
+
     super({
-      datasources: {
-        db: {
-          url: databaseUrl,
-        },
-      },
+      adapter,
     });
   }
   async onModuleInit(): Promise<void> {

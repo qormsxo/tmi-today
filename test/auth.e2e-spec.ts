@@ -6,10 +6,14 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { execSync } from 'child_process';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client/extension'
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import mysql from 'mysql2/promise';
 import * as bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const pool = mysql.createPool(process.env.DATABASE_URL);
+const adapter = new PrismaMariaDb(pool);
+const prisma = new PrismaClient({ adapter });
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;

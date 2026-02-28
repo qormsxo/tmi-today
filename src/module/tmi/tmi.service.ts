@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PrismaService } from '../../prisma/prisma.service';
-import { User } from '@prisma/client';
+import { UserModel } from '../../generated/prisma/models/User';
 
 @Injectable()
 export class TmiService {
@@ -17,7 +17,7 @@ export class TmiService {
     });
   }
 
-  async getTodaysTmi(user: User): Promise<string> {
+  async getTodaysTmi(user: UserModel): Promise<string> {
     const completion = await this.openai.chat.completions.create({
       messages: [
         {

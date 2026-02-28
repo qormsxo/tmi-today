@@ -7,8 +7,13 @@ import { execSync } from 'child_process';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.test', override: true });
 
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client/extension'
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import mysql from 'mysql2/promise';
+
+const pool = mysql.createPool(process.env.DATABASE_URL);
+const adapter = new PrismaMariaDb(pool);
+const prisma = new PrismaClient({ adapter });
 
 describe('User (e2e)', () => {
   let app: INestApplication;

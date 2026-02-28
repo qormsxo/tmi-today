@@ -1,0 +1,162 @@
+---
+description: "TMI Today 프로젝트 개발 규칙"
+alwaysApply: true
+---
+
+# TMI Today 프로젝트 규칙
+
+## 프로젝트 개요
+
+### 프로젝트 소개
+- **이름**: TMI Today (오늘의 TMI 생성기)
+- **목적**: GPT를 활용하여 할 말 없는 사람들을 위한 대화 주제(TMI)를 추천
+- **타입**: 사이드 프로젝트 (TDD 기반 백엔드 개발 연습)
+
+### 기술 스택
+- **프레임워크**: NestJS (TypeScript)
+- **데이터베이스**: MySQL (Prisma ORM)
+- **AI 연동**: OpenAI GPT API
+- **인증**: Passport JWT + Kakao OAuth2
+- **테스트**: Jest + Supertest
+- **문서화**: Swagger
+- **배포 (예정)**: Docker, Render 또는 Vercel Functions
+
+### 프로젝트 구조
+```
+tmi-today/
+├── src/                    # 소스 코드
+│   ├── module/
+│   │   ├── tmi/           # TMI 생성 모듈
+│   │   ├── auth/          # 인증 모듈
+│   │   └── user/          # 사용자 모듈
+│   ├── common/            # 공통 유틸리티
+│   ├── app.module.ts
+│   └── main.ts
+├── prisma/                # Prisma 스키마
+│   └── schema.prisma      # DB 모델 정의
+├── design-log/            # 설계 문서
+├── test/                  # E2E 테스트
+├── logs/                  # 로그 파일
+└── dist/                  # 빌드 결과물
+```
+
+### 데이터베이스 스키마
+**User 모델**
+- Kakao OAuth2와 로컬 회원가입 모두 지원
+- 주요 필드: id, kakaoId, email, passwordHash, nickname, profileImageUrl
+- 관계: User 1 : N Tmi
+
+**Tmi 모델**
+- 생성된 TMI 콘텐츠 저장
+- 주요 필드: id, content, userId
+- 관계: Tmi N : 1 User
+
+### 주요 명령어
+- `npm run start:dev` - 개발 서버 실행
+- `npm run test` - 단위 테스트
+- `npm run test:e2e` - E2E 테스트
+- `npm run prisma:generate` - Prisma 클라이언트 생성
+- `npm run prisma:migrate` - DB 마이그레이션
+- `npm run prisma:studio` - Prisma Studio 실행
+
+### 주요 기능 현황
+**현재 구현됨 ✅**
+- [x] 기본 NestJS 구조 세팅
+- [x] GPT API 연동
+- [x] 단일 엔드포인트로 TMI 생성
+- [x] 테스트 코드 작성
+
+**개발 예정 🚧**
+- [ ] Swagger 문서화
+- [ ] 카테고리 기반 TMI 추천 (음식, 역사, 동물, 신체 등)
+- [ ] 대화용 질문 추천 모드
+- [ ] 좋아요 기반 맞춤형 대화 주제
+- [ ] 배포
+
+### 환경 변수
+`.env` 파일에 다음 변수들이 필요합니다:
+- `DATABASE_URL` - MySQL 연결 문자열
+- `JWT_SECRET` - JWT 토큰 시크릿
+- OpenAI API 키 관련 설정
+- Kakao OAuth2 클라이언트 정보
+
+### 비즈니스 로직
+- GPT API를 활용하여 유쾌하고 재미있는 TMI 생성
+- 사용자의 대화 어색함을 해소하는 것이 핵심 목표
+- 향후 사용자 피드백을 반영한 개인화된 추천 시스템 구축 예정
+
+---
+
+## Design Log Methodology
+
+중요한 기능과 아키텍처 변경에는 엄격한 Design Log 방법론을 따른다.
+
+### 변경 전에 해야 할 일
+1. `./design-log/`에서 기존 설계와 구현 노트 확인
+2. 새 기능: Design Log 먼저 생성 → 승인 → 구현
+3. 관련 Design Log를 읽고 컨텍스트와 제약사항 이해
+
+### Design Log 작성 시
+1. 구조: Background → Problem → Questions and Answers → Design → Implementation Plan → Examples → Trade-offs
+2. 구체적으로: 파일 경로, 타입 시그니처, 검증 규칙 포함
+3. 예시 표시: ✅/❌로 좋은/나쁜 패턴 표시, 현실적인 코드 포함
+4. 이유 설명: 무엇만 설명하지 말고 근거와 트레이드오프 설명
+5. 질문하기: 불명확하거나 부족한 정보는 파일에 질문으로 남기기
+6. 답변 시: 질문은 유지하고 답변만 추가
+7. 간결하게: 짧고 관련성 높은 설명만 작성
+8. 다이어그램: 필요 시 Mermaid 인라인 다이어그램 사용
+
+### 구현 시
+1. Design Log의 구현 계획 단계를 따른다
+2. 테스트를 먼저 작성하거나 기존 테스트를 새 동작에 맞게 업데이트
+3. 구현 시작 후에는 Design Log 초기 섹션을 수정하지 않는다
+4. 진행하면서 "Implementation Results" 섹션을 추가한다
+5. 편차 문서화: 구현이 설계와 다른 이유 설명
+6. 테스트 실행: 구현 노트에 테스트 결과 포함 (X/Y 통과)
+7. 구현 완료 후 원래 설계와의 편차 요약 추가
+
+### 질문 답변 시
+1. 관련 있으면 Design Log 번호로 참조 (예: "Design Log #1 참고")
+2. 코드베이스 용어 사용: NestJS, Prisma, DTO, Service, Controller 등
+3. 타입 시그니처 표시: TypeScript 프로젝트는 타입을 명확히 표시
+4. 하위 호환성 고려: 기본적으로 breaking change 피하기
+
+## 프로젝트 특화 규칙
+
+### 코드 스타일
+- NestJS 모듈 구조 준수
+- Prisma를 통한 데이터베이스 접근
+- TDD 기반 개발: 테스트 코드 먼저 작성
+- TypeScript strict 모드 사용
+
+### 네이밍 컨벤션
+- 파일명: kebab-case (예: `tmi.service.ts`)
+- 클래스명: PascalCase (예: `TmiService`)
+- 함수/변수명: camelCase (예: `generateTmi`)
+- 상수: UPPER_SNAKE_CASE (예: `MAX_TMI_LENGTH`)
+
+### 모듈 구조
+```
+src/module/[feature]/
+├── [feature].controller.ts
+├── [feature].service.ts
+├── [feature].service.spec.ts
+├── [feature].module.ts
+└── dto/
+    ├── create-[feature].dto.ts
+    └── update-[feature].dto.ts
+```
+
+### 테스트
+- 단위 테스트는 `*.spec.ts` 파일에 작성
+- E2E 테스트는 `test/` 폴더에 작성
+- 모든 서비스 메서드는 테스트 커버리지 필수
+- 테스트 실패 시 구현하지 않음
+
+### 개발 시 유의사항
+1. **TDD 접근**: 기능 개발 전 테스트 코드를 먼저 작성
+2. **도메인 중심 설계**: 비즈니스 로직은 서비스 레이어에 집중
+3. **타입 안정성**: TypeScript의 타입 시스템을 적극 활용
+4. **API 문서화**: Swagger 데코레이터를 활용한 자동 문서화
+5. **로깅**: Winston을 사용한 구조화된 로깅
+6. **코드 품질**: ESLint와 Prettier를 통한 일관된 코드 스타일 유지
