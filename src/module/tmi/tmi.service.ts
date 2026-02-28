@@ -26,11 +26,27 @@ export class TmiService {
 
   private readonly CODE_REGEX = /^[a-z0-9_]+$/;
 
-  async getCategories() {
-    return this.prisma.category.findMany({
+  async getCategories(userId?: string) {
+    const categories = await this.prisma.category.findMany({
       orderBy: { code: 'asc' },
-      select: { id: true, code: true, name: true },
+      include: {
+        _count: { select: { likes: true } },
+        ...(userId && {
+          likes: {
+            where: { userId },
+            select: { id: true },
+          },
+        }),
+      },
     });
+
+    return categories.map((cat) => ({
+      id: cat.id,
+      code: cat.code,
+      name: cat.name,
+      likeCount: cat._count.likes,
+      ...(userId && { isLiked: cat.likes.length > 0 }),
+    }));
   }
 
   async createCategory(dto: CreateCategoryDto) {
@@ -90,6 +106,62 @@ export class TmiService {
     }
     await this.prisma.category.delete({ where: { id } });
     return { deleted: true };
+  }
+
+  async toggleCategoryLike(userId: string, categoryId: string) {
+    const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    if (!category) {
+      throw new NotFoundException(`카테고리를 찾을 수 없습니다: ${categoryId}`);
+    }
+
+    const existingLike = await this.prisma.categoryLike.findUnique({
+      where: { userId_categoryId: { userId, categoryId } },
+    });
+
+    if (existingLike) {
+      await this.prisma.categoryLike.delete({
+        where: { id: existingLike.id },
+      });
+    } else {
+      await this.prisma.categoryLike.create({
+        data: { userId, categoryId },
+      });
+    }
+
+    const likeCount = await this.prisma.categoryLike.count({
+      where: { categoryId },
+    });
+
+    return {
+      liked: !existingLike,
+      likeCount,
+    };
+  }
+
+  async getMyLikedCategories(userId: string) {
+    const likes = await this.prisma.categoryLike.findMany({
+      where: { userId },
+      include: {
+        category: {
+          select: { id: true, code: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const categoriesWithCount = await Promise.all(
+      likes.map(async (like) => {
+        const likeCount = await this.prisma.categoryLike.count({
+          where: { categoryId: like.categoryId },
+        });
+        return {
+          ...like.category,
+          likeCount,
+        };
+      }),
+    );
+
+    return categoriesWithCount;
   }
 
   async getTodaysTmi(user: UserModel, categoryCode?: string): Promise<string> {

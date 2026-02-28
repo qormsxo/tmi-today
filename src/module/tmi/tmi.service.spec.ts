@@ -42,6 +42,13 @@ describe('TmiService', () => {
     tmi: {
       create: jest.fn(),
     },
+    categoryLike: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -73,20 +80,34 @@ describe('TmiService', () => {
   });
 
   describe('getCategories', () => {
-    it('카테고리 목록을 반환해야 한다', async () => {
+    it('카테고리 목록을 likeCount와 함께 반환해야 한다', async () => {
       const categories = [
-        { id: '1', code: 'food', name: '음식' },
-        { id: '2', code: 'animal', name: '동물' },
+        { id: '1', code: 'food', name: '음식', _count: { likes: 5 }, likes: [] },
+        { id: '2', code: 'animal', name: '동물', _count: { likes: 3 }, likes: [] },
       ];
       mockPrisma.category.findMany.mockResolvedValue(categories);
 
       const result = await service.getCategories();
 
-      expect(result).toEqual(categories);
-      expect(mockPrisma.category.findMany).toHaveBeenCalledWith({
-        orderBy: { code: 'asc' },
-        select: { id: true, code: true, name: true },
-      });
+      expect(result).toEqual([
+        { id: '1', code: 'food', name: '음식', likeCount: 5 },
+        { id: '2', code: 'animal', name: '동물', likeCount: 3 },
+      ]);
+    });
+
+    it('userId가 주어지면 isLiked를 포함해야 한다', async () => {
+      const categories = [
+        { id: '1', code: 'food', name: '음식', _count: { likes: 5 }, likes: [{ id: 'like-1' }] },
+        { id: '2', code: 'animal', name: '동물', _count: { likes: 3 }, likes: [] },
+      ];
+      mockPrisma.category.findMany.mockResolvedValue(categories);
+
+      const result = await service.getCategories('user-1');
+
+      expect(result).toEqual([
+        { id: '1', code: 'food', name: '음식', likeCount: 5, isLiked: true },
+        { id: '2', code: 'animal', name: '동물', likeCount: 3, isLiked: false },
+      ]);
     });
   });
 
@@ -233,6 +254,69 @@ describe('TmiService', () => {
       mockPrisma.category.findUnique.mockResolvedValue(null);
 
       await expect(service.deleteCategory('invalid-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('toggleCategoryLike', () => {
+    it('좋아요가 없으면 생성하고 liked: true를 반환해야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({ id: 'cat-1' });
+      mockPrisma.categoryLike.findUnique.mockResolvedValue(null);
+      mockPrisma.categoryLike.create.mockResolvedValue({ id: 'like-1' });
+      mockPrisma.categoryLike.count.mockResolvedValue(1);
+
+      const result = await service.toggleCategoryLike('user-1', 'cat-1');
+
+      expect(result).toEqual({ liked: true, likeCount: 1 });
+      expect(mockPrisma.categoryLike.create).toHaveBeenCalledWith({
+        data: { userId: 'user-1', categoryId: 'cat-1' },
+      });
+    });
+
+    it('좋아요가 있으면 삭제하고 liked: false를 반환해야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({ id: 'cat-1' });
+      mockPrisma.categoryLike.findUnique.mockResolvedValue({ id: 'like-1' });
+      mockPrisma.categoryLike.delete.mockResolvedValue({});
+      mockPrisma.categoryLike.count.mockResolvedValue(0);
+
+      const result = await service.toggleCategoryLike('user-1', 'cat-1');
+
+      expect(result).toEqual({ liked: false, likeCount: 0 });
+      expect(mockPrisma.categoryLike.delete).toHaveBeenCalledWith({
+        where: { id: 'like-1' },
+      });
+    });
+
+    it('존재하지 않는 카테고리일 때 NotFoundException을 던져야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue(null);
+
+      await expect(service.toggleCategoryLike('user-1', 'invalid')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getMyLikedCategories', () => {
+    it('내가 좋아요한 카테고리 목록을 반환해야 한다', async () => {
+      mockPrisma.categoryLike.findMany.mockResolvedValue([
+        { categoryId: 'cat-1', category: { id: 'cat-1', code: 'food', name: '음식' } },
+        { categoryId: 'cat-2', category: { id: 'cat-2', code: 'animal', name: '동물' } },
+      ]);
+      mockPrisma.categoryLike.count
+        .mockResolvedValueOnce(10)
+        .mockResolvedValueOnce(5);
+
+      const result = await service.getMyLikedCategories('user-1');
+
+      expect(result).toEqual([
+        { id: 'cat-1', code: 'food', name: '음식', likeCount: 10 },
+        { id: 'cat-2', code: 'animal', name: '동물', likeCount: 5 },
+      ]);
+    });
+
+    it('좋아요한 카테고리가 없으면 빈 배열을 반환해야 한다', async () => {
+      mockPrisma.categoryLike.findMany.mockResolvedValue([]);
+
+      const result = await service.getMyLikedCategories('user-1');
+
+      expect(result).toEqual([]);
     });
   });
 });

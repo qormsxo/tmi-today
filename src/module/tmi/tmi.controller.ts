@@ -22,8 +22,23 @@ export class TmiController {
   constructor(private readonly tmiService: TmiService) {}
 
   @Get('categories')
-  getCategories() {
-    return this.tmiService.getCategories();
+  getCategories(@Req() req) {
+    const userId = req.user?.id;
+    return this.tmiService.getCategories(userId);
+  }
+
+  @Get('categories/my-likes')
+  @UseGuards(JwtAuthGuard)
+  getMyLikedCategories(@Req() req) {
+    const user = req.user as UserModel;
+    return this.tmiService.getMyLikedCategories(user.id);
+  }
+
+  @Post('categories/:id/like')
+  @UseGuards(JwtAuthGuard)
+  toggleCategoryLike(@Req() req, @Param('id') id: string) {
+    const user = req.user as UserModel;
+    return this.tmiService.toggleCategoryLike(user.id, id);
   }
 
   @Post('categories')
