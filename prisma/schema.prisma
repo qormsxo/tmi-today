@@ -46,7 +46,7 @@ model Tmi {
   updatedAt  DateTime  @updatedAt @map("updated_at")
   userId     String    @map("user_id")
   user       User      @relation(fields: [userId], references: [id])
-  category   Category? @relation(fields: [categoryId], references: [id])
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@map("tmi")
 }

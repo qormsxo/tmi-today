@@ -1,8 +1,21 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { TmiService } from './tmi.service';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { UserModel } from '../../generated/prisma/models/User';
 import { GetTmiQueryDto } from './dto/get-tmi-query.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Controller('tmi')
 export class TmiController {
@@ -11,6 +24,24 @@ export class TmiController {
   @Get('categories')
   getCategories() {
     return this.tmiService.getCategories();
+  }
+
+  @Post('categories')
+  @UseGuards(JwtAuthGuard)
+  createCategory(@Body() dto: CreateCategoryDto) {
+    return this.tmiService.createCategory(dto);
+  }
+
+  @Patch('categories/:id')
+  @UseGuards(JwtAuthGuard)
+  updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.tmiService.updateCategory(id, dto);
+  }
+
+  @Delete('categories/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteCategory(@Param('id') id: string) {
+    return this.tmiService.deleteCategory(id);
   }
 
   @Get('today')

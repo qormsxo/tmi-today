@@ -1,8 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserModel } from '../../generated/prisma/models/User';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class TmiService {
@@ -17,11 +24,72 @@ export class TmiService {
     });
   }
 
+  private readonly CODE_REGEX = /^[a-z0-9_]+$/;
+
   async getCategories() {
     return this.prisma.category.findMany({
       orderBy: { code: 'asc' },
       select: { id: true, code: true, name: true },
     });
+  }
+
+  async createCategory(dto: CreateCategoryDto) {
+    if (!this.CODE_REGEX.test(dto.code) || dto.code.length > 50) {
+      throw new BadRequestException('code는 영문 소문자, 숫자, 언더스코어만 1~50자로 입력해주세요.');
+    }
+    if (!dto.name?.trim() || dto.name.length > 100) {
+      throw new BadRequestException('name은 1~100자로 입력해주세요.');
+    }
+    try {
+      return await this.prisma.category.create({
+        data: { code: dto.code.trim(), name: dto.name.trim() },
+        select: { id: true, code: true, name: true },
+      });
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'P2002') {
+        throw new ConflictException(`카테고리 코드 '${dto.code}'가 이미 존재합니다.`);
+      }
+      throw e;
+    }
+  }
+
+  async updateCategory(id: string, dto: UpdateCategoryDto) {
+    const existing = await this.prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`카테고리를 찾을 수 없습니다: ${id}`);
+    }
+    if (dto.code !== undefined) {
+      if (!this.CODE_REGEX.test(dto.code) || dto.code.length > 50) {
+        throw new BadRequestException('code는 영문 소문자, 숫자, 언더스코어만 1~50자로 입력해주세요.');
+      }
+    }
+    if (dto.name !== undefined && (!dto.name.trim() || dto.name.length > 100)) {
+      throw new BadRequestException('name은 1~100자로 입력해주세요.');
+    }
+    try {
+      return await this.prisma.category.update({
+        where: { id },
+        data: {
+          ...(dto.code !== undefined && { code: dto.code.trim() }),
+          ...(dto.name !== undefined && { name: dto.name.trim() }),
+        },
+        select: { id: true, code: true, name: true },
+      });
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'P2002') {
+        throw new ConflictException(`카테고리 코드 '${dto.code}'가 이미 존재합니다.`);
+      }
+      throw e;
+    }
+  }
+
+  async deleteCategory(id: string) {
+    const existing = await this.prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`카테고리를 찾을 수 없습니다: ${id}`);
+    }
+    await this.prisma.category.delete({ where: { id } });
+    return { deleted: true };
   }
 
   async getTodaysTmi(user: UserModel, categoryCode?: string): Promise<string> {

@@ -1,4 +1,8 @@
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TmiService } from './tmi.service';
 import { ConfigService } from '@nestjs/config';
@@ -31,6 +35,9 @@ describe('TmiService', () => {
     category: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
     tmi: {
       create: jest.fn(),
@@ -160,6 +167,72 @@ describe('TmiService', () => {
       mockPrisma.category.findUnique.mockResolvedValue(null);
 
       await expect(service.getTodaysTmi(mockUser as never, 'invalid')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('createCategory', () => {
+    it('유효한 DTO로 카테고리를 생성해야 한다', async () => {
+      const dto = { code: 'sports', name: '스포츠' };
+      const created = { id: 'cat-1', code: 'sports', name: '스포츠' };
+      mockPrisma.category.create.mockResolvedValue(created);
+
+      const result = await service.createCategory(dto);
+
+      expect(result).toEqual(created);
+      expect(mockPrisma.category.create).toHaveBeenCalledWith({
+        data: { code: 'sports', name: '스포츠' },
+        select: { id: true, code: true, name: true },
+      });
+    });
+
+    it('잘못된 code 형식일 때 BadRequestException을 던져야 한다', async () => {
+      await expect(service.createCategory({ code: 'Invalid', name: '테스트' })).rejects.toThrow(BadRequestException);
+      await expect(service.createCategory({ code: 'food-code!', name: '테스트' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('code 중복 시 ConflictException을 던져야 한다', async () => {
+      mockPrisma.category.create.mockRejectedValue({ code: 'P2002' });
+
+      await expect(service.createCategory({ code: 'food', name: '음식2' })).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('updateCategory', () => {
+    it('존재하는 카테고리를 수정해야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({ id: 'cat-1' });
+      mockPrisma.category.update.mockResolvedValue({
+        id: 'cat-1',
+        code: 'sports',
+        name: '스포츠·운동',
+      });
+
+      const result = await service.updateCategory('cat-1', { name: '스포츠·운동' });
+
+      expect(result.name).toBe('스포츠·운동');
+    });
+
+    it('존재하지 않는 id일 때 NotFoundException을 던져야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateCategory('invalid-id', { name: '테스트' })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deleteCategory', () => {
+    it('존재하는 카테고리를 삭제해야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue({ id: 'cat-1' });
+      mockPrisma.category.delete.mockResolvedValue({});
+
+      const result = await service.deleteCategory('cat-1');
+
+      expect(result).toEqual({ deleted: true });
+      expect(mockPrisma.category.delete).toHaveBeenCalledWith({ where: { id: 'cat-1' } });
+    });
+
+    it('존재하지 않는 id일 때 NotFoundException을 던져야 한다', async () => {
+      mockPrisma.category.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteCategory('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 });
